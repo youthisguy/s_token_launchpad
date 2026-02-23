@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a token launchpad / IDO (Initial DEX Offering) contract on Stellar/Soroban. Users contribute a funding_token (e.g. USDC) to receive a new project token. If the raise hits its target before the deadline, the launch succeeds. If not, contributors get refunded.
 
 ## Getting Started
 
