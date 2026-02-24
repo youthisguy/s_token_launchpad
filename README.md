@@ -11,11 +11,14 @@ A decentralized token launchpad (IDO) built on Stellar/Soroban. Contributors fun
 ## Screenshots
 
 ### Mobile Responsive View
-> ![Mobile Responsive View](app/screenshot/mobile-responsive.png)
+> ![Mobile Responsive View](app/screenshots/mobile-responsive.png)
 
-### CI/CD Pipeline
->
+## CI/CD
 
+![CI](https://github.com/youthisguy/s_token_launchpad/actions/workflows/ci.yml/badge.svg)
+
+### Pipeline
+![CI Screenshot](app/screenshots/CI_CD.png)
 ---
 
 ## Architecture
@@ -73,6 +76,17 @@ env.authorize_as_current_contract(vec![
 | Funding Token (XLM SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
 ---
+
+## Testnet Transactions
+
+### Inter-Contract Call — Claim (Launchpad → Token Mint)
+
+| | |
+|---|---|
+| **Transaction** | `a257fca2abb75264955f73557944afacb6b2255907b45b93e3182869f9d31cc9` |
+| **Explorer** | [View on Stellar Expert](https://stellar.expert/explorer/testnet/tx/a257fca2abb75264955f73557944afacb6b2255907b45b93e3182869f9d31cc9) |
+| **Action** | Launchpad contract calls `token.mint()` using `authorize_as_current_contract` |
+
 
 ## Contract Functions
 
