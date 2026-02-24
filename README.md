@@ -4,17 +4,17 @@ A decentralized token launchpad (IDO) built on Stellar/Soroban. Contributors fun
 
 ## Live Demo
 
-> [https://site.app](https://site.vercel.app)
+> [https://s-token-launchpad.vercel.app](https://s-token-launchpad.vercel.app)
 
 ---
 
 ## Screenshots
 
 ### Mobile Responsive View
->  
+> ![Mobile Responsive View](app/screenshot/mobile-responsive.png)
 
 ### CI/CD Pipeline
->  
+>
 
 ---
 
@@ -68,8 +68,8 @@ env.authorize_as_current_contract(vec![
 
 | Contract | Address |
 |---|---|
-| Token | `CDF25OKYJITDPZ4GAI7PFYIYSZ3JMNMD6YP5RRQHV6VAZXGC6IFUV22J` |
-| Launchpad | `CD72OXYKOBLGWZPZAHV3QSH3PI7AFOX4RYULT7VB5URNW6P6QFDFHURQ` |
+| Token | `CB5VGFF6XPOYTN6SEQ5OE3DQBDYGULNECDYMK3CTOR4DL5NIVIEWRPVR` |
+| Launchpad | `CAIO6PTUCO7NMIF67T4I7QFWHZSYWVVZ3WVFLRD7LEUQI64RKDLQD4VH` |
 | Funding Token (XLM SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
 ---
