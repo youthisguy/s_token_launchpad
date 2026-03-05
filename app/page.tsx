@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "./contexts/WalletContext";
 import {
-  SorobanRpc,
+  rpc as StellarRpc,
   TransactionBuilder,
   Networks,
   Address,
@@ -13,7 +13,6 @@ import {
 } from "@stellar/stellar-sdk";
 import {
   Rocket,
-  Target,
   Clock,
   TrendingUp,
   CheckCircle2,
@@ -30,17 +29,15 @@ import {
 import { FaWallet } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
 
-// ─── Contract Config ──────────────────────────────────────────────────────────
+// ─── Contract Config ───────────────────────────────────────────────────────────
 const LAUNCHPAD_ID = "CAIO6PTUCO7NMIF67T4I7QFWHZSYWVVZ3WVFLRD7LEUQI64RKDLQD4VH";
 const TOKEN_ID = "CB5VGFF6XPOYTN6SEQ5OE3DQBDYGULNECDYMK3CTOR4DL5NIVIEWRPVR";
 const RPC_URL = "https://soroban-testnet.stellar.org:443";
 
-const server = new SorobanRpc.Server(RPC_URL);
+const server = new StellarRpc.Server(RPC_URL);
 const networkPassphrase = Networks.TESTNET;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const STROOPS = 10_000_000n;
-
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 function stroopsToXlm(stroops: bigint | number): string {
   return (Number(stroops) / 10_000_000).toFixed(2);
 }
@@ -70,9 +67,11 @@ const STATE_COLOR: Record<number, string> = {
   2: "text-rose-400 border-rose-500/30 bg-rose-500/10",
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ─────────────────────────────────────────────────────────────────
 export default function LaunchpadPage() {
   const { address: connectedAddress, walletsKit, setAddress } = useWallet();
+
+  const [mounted, setMounted] = useState(false);
 
   // contract state
   const [state, setState] = useState<number | null>(null);
@@ -92,9 +91,13 @@ export default function LaunchpadPage() {
     hash?: string;
   } | null>(null);
 
-  // ── Reads ────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
+  // ── Reads ─────────────────────────────────────────────────────────────────────
   const readContract = useCallback(async () => {
+    if (typeof window === "undefined") return;
     try {
       setRefreshing(true);
       const sourceAddress =
@@ -112,7 +115,7 @@ export default function LaunchpadPage() {
           .setTimeout(30)
           .build();
         const result = await server.simulateTransaction(tx);
-        if (SorobanRpc.Api.isSimulationSuccess(result)) {
+        if (StellarRpc.Api.isSimulationSuccess(result)) {
           return scValToNative(result.result!.retval);
         }
         return null;
@@ -128,7 +131,6 @@ export default function LaunchpadPage() {
       if (rawFunded !== null) setFunded(BigInt(rawFunded));
       if (rawTarget !== null) setTarget(BigInt(rawTarget));
 
-      // load per-user data when wallet connected
       if (connectedAddress) {
         const userScVal = new Address(connectedAddress).toScVal();
 
@@ -144,7 +146,7 @@ export default function LaunchpadPage() {
               .setTimeout(30)
               .build();
             const tokenSim = await server.simulateTransaction(tokenTx);
-            return SorobanRpc.Api.isSimulationSuccess(tokenSim)
+            return StellarRpc.Api.isSimulationSuccess(tokenSim)
               ? scValToNative(tokenSim.result!.retval)
               : null;
           })(),
@@ -160,9 +162,8 @@ export default function LaunchpadPage() {
     }
   }, [connectedAddress]);
 
-  // load XLM native balance from Horizon
   const loadXlmBalance = useCallback(async () => {
-    if (!connectedAddress) return;
+    if (!connectedAddress || typeof window === "undefined") return;
     try {
       const res = await fetch(
         `https://horizon-testnet.stellar.org/accounts/${connectedAddress}`
@@ -174,11 +175,14 @@ export default function LaunchpadPage() {
   }, [connectedAddress]);
 
   useEffect(() => {
+    if (!mounted) return;
     readContract();
-  }, [readContract]);
+  }, [readContract, mounted]);
+
   useEffect(() => {
+    if (!mounted) return;
     loadXlmBalance();
-  }, [loadXlmBalance]);
+  }, [loadXlmBalance, mounted]);
 
   // auto-dismiss tx status
   useEffect(() => {
@@ -188,8 +192,7 @@ export default function LaunchpadPage() {
     }
   }, [txStatus]);
 
-  // ── Writes ───────────────────────────────────────────────────────────────────
-
+  // ── Writes ────────────────────────────────────────────────────────────────────
   const sendTx = async (method: string, ...args: any[]) => {
     if (!connectedAddress || !walletsKit) return;
     setLoading(true);
@@ -206,22 +209,33 @@ export default function LaunchpadPage() {
         .build();
 
       const prepared = await server.prepareTransaction(tx);
-      const { signedTxXdr } = await walletsKit.signTransaction(
-        prepared.toXDR()
-      );
+      const { signedTxXdr } = await walletsKit.signTransaction(prepared.toXDR());
       const response = await server.sendTransaction(
         TransactionBuilder.fromXDR(signedTxXdr, networkPassphrase)
       );
 
-      if (response.status === "PENDING") {
+      if (response.status === "ERROR") {
+        throw new Error(`Transaction rejected: ${response.status}`);
+      }
+
+      // Poll until confirmed — as recommended in the official guide
+      const hash = response.hash;
+      let getResponse = await server.getTransaction(hash);
+      while (getResponse.status === "NOT_FOUND") {
+        await new Promise((r) => setTimeout(r, 1000));
+        getResponse = await server.getTransaction(hash);
+      }
+
+      if (getResponse.status === "SUCCESS") {
         setTxStatus({
           type: "success",
           msg: "Transaction confirmed!",
-          hash: response.hash,
+          hash,
         });
-        await new Promise((r) => setTimeout(r, 3000));
         await readContract();
         await loadXlmBalance();
+      } else {
+        throw new Error(`Transaction failed: ${getResponse.status}`);
       }
     } catch (err: any) {
       console.error(err);
@@ -250,7 +264,7 @@ export default function LaunchpadPage() {
     sendTx("refund", new Address(connectedAddress!).toScVal());
   };
 
-  // ── Derived UI Values ─────────────────────────────────────────────────────────
+  // ── Derived UI Values ──────────────────────────────────────────────────────────
   const progress = pct(funded, target);
   const fundedXlm = stroopsToXlm(funded);
   const targetXlm = stroopsToXlm(target);
@@ -259,6 +273,9 @@ export default function LaunchpadPage() {
   const canBuy = state === 0 && connectedAddress;
   const canClaim = state === 1 && buyerBalance > 0n && connectedAddress;
   const canRefund = state === 2 && buyerBalance > 0n && connectedAddress;
+
+  if (!mounted) return null;
+
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
@@ -290,9 +307,7 @@ export default function LaunchpadPage() {
               </span>
             )}
           </div>
-          <p className="text-zinc-600 text-xs tracking-wider pl-10">
-            Stellar Testnet · Soroban Smart Contract
-          </p>
+   
         </header>
 
         {/* ── Progress Card ── */}
@@ -308,15 +323,7 @@ export default function LaunchpadPage() {
                 <span className="text-lg text-zinc-500 ml-2">XLM</span>
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] text-zinc-500 tracking-widest uppercase mb-1">
-                Target
-              </p>
-              <p className="text-xl font-bold text-zinc-400 tabular-nums">
-                {targetXlm}
-                <span className="text-sm text-zinc-600 ml-1">XLM</span>
-              </p>
-            </div>
+           
           </div>
 
           {/* Progress Bar */}
@@ -356,7 +363,7 @@ export default function LaunchpadPage() {
             </div>
             <div className="space-y-1">
               <p className="text-[9px] text-zinc-600 uppercase tracking-widest flex items-center gap-1">
-                <TrendingUp size={10} /> My Contribution
+                <TrendingUp size={10} /> Staked
               </p>
               <p className="text-xs font-bold text-zinc-300">
                 {connectedAddress ? `${myContrib} XLM` : "—"}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { WalletProvider } from "./contexts/WalletContext";
 import WalletConnection from "./components/WalletConnection";
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
   title: "STELLAR LAUNCHPAD",
@@ -15,6 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <Analytics />
       <body className="antialiased bg-[#040407]">
         <WalletProvider>
           <div className="min-h-screen flex flex-col">

@@ -83,8 +83,8 @@ env.authorize_as_current_contract(vec![
 
 | | |
 |---|---|
-| **Transaction** | `a257fca2abb75264955f73557944afacb6b2255907b45b93e3182869f9d31cc9` |
-| **Explorer** | [View on Stellar Expert](https://stellar.expert/explorer/testnet/tx/a257fca2abb75264955f73557944afacb6b2255907b45b93e3182869f9d31cc9) |
+| **Transaction** | `fadc55b6446caddb9aaf53fb0ca81fb0e83dac9be7dc9bf3c0c6978d1027d84f` |
+| **Explorer** | [View on Stellar Expert](https://stellar.expert/explorer/testnet/tx/fadc55b6446caddb9aaf53fb0ca81fb0e83dac9be7dc9bf3c0c6978d1027d84f) |
 | **Action** | Launchpad contract calls `token.mint()` using `authorize_as_current_contract` |
 
 
